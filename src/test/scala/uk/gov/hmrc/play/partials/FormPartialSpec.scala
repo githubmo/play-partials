@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 HM Revenue & Customs
+ * Copyright 2017 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,12 @@ import org.mockito.{Matchers => MockitoMatchers}
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpecLike}
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.test.{FakeApplication, FakeHeaders, FakeRequest, WithApplication}
+import play.api.test.{FakeHeaders, FakeRequest, WithApplication}
 import play.filters.csrf.CSRF.Token
 import play.twirl.api.Html
-import uk.gov.hmrc.play.http.{HeaderCarrier, HttpException, HttpGet, HttpReads}
+import uk.gov.hmrc.http.{CoreGet, HeaderCarrier}
+import uk.gov.hmrc.play.http.HttpReads
+import uk.gov.hmrc.play.http.ws.WSExtensions.ExtendCoreGet
 
 import scala.concurrent.Future
 
@@ -32,10 +34,10 @@ class FormPartialSpec extends WordSpecLike with Matchers with MockitoSugar with 
 
   val fakeApplication = new GuiceApplicationBuilder().configure("csrf.sign.tokens" -> false).build()
 
-  val mockHttpGet = mock[HttpGet]
+  val mockCoreGet = mock[ExtendCoreGet]
 
   val partialProvider = new FormPartialRetriever {
-    override val httpGet: HttpGet = mockHttpGet
+    override val coreGet: ExtendCoreGet = mockCoreGet
 
     override val crypto = c _
 
@@ -45,7 +47,7 @@ class FormPartialSpec extends WordSpecLike with Matchers with MockitoSugar with 
   override protected def beforeEach() = {
     super.beforeEach()
 
-    reset(mockHttpGet)
+    reset(mockCoreGet)
   }
 
   private def csrfTags(token: String) = Map(Token.NameRequestTag -> "csrfToken", Token.RequestTag -> token)
@@ -56,7 +58,7 @@ class FormPartialSpec extends WordSpecLike with Matchers with MockitoSugar with 
 
       implicit val request = FakeRequest("GET", "/getform", FakeHeaders(), "", tags = csrfTags("token"))
 
-      when(mockHttpGet.GET[HtmlPartial](MockitoMatchers.eq("foo?csrfToken=token"))(any[HttpReads[HtmlPartial]], any[HeaderCarrier]))
+      when(mockCoreGet.GET[HtmlPartial](MockitoMatchers.eq("foo?csrfToken=token"))(any[HttpReads[HtmlPartial]], any[HeaderCarrier]))
         .thenReturn(Future.successful(HtmlPartial.Success(title = None, content = Html("some content A"))))
         .thenReturn(Future.successful(HtmlPartial.Success(title = None, content = Html("some content B"))))
 
@@ -73,7 +75,7 @@ class FormPartialSpec extends WordSpecLike with Matchers with MockitoSugar with 
 
       implicit val request = FakeRequest("GET", "/getform", FakeHeaders(), "", tags = csrfTags("token"))
 
-      when(mockHttpGet.GET[HtmlPartial](MockitoMatchers.eq("foo?attrA=valA&attrB=valB&csrfToken=token"))(any[HttpReads[HtmlPartial]], any[HeaderCarrier]))
+      when(mockCoreGet.GET[HtmlPartial](MockitoMatchers.eq("foo?attrA=valA&attrB=valB&csrfToken=token"))(any[HttpReads[HtmlPartial]], any[HeaderCarrier]))
         .thenReturn(Future.successful(HtmlPartial.Success(title = None, content = Html("some content C"))))
 
       val p = partialProvider.getPartial("foo?attrA=valA&attrB=valB").asInstanceOf[HtmlPartial.Success]
@@ -85,7 +87,7 @@ class FormPartialSpec extends WordSpecLike with Matchers with MockitoSugar with 
 
       implicit val request = FakeRequest("GET", "/getform", FakeHeaders(), "", tags = csrfTags("token"))
 
-      when(mockHttpGet.GET[HtmlPartial](MockitoMatchers.eq("foo?csrfToken=token"))(any[HttpReads[HtmlPartial]], any[HeaderCarrier]))
+      when(mockCoreGet.GET[HtmlPartial](MockitoMatchers.eq("foo?csrfToken=token"))(any[HttpReads[HtmlPartial]], any[HeaderCarrier]))
         .thenReturn(Future.successful(HtmlPartial.Failure()))
 
       partialProvider.getPartial("foo") should be (HtmlPartial.Failure())
@@ -95,7 +97,7 @@ class FormPartialSpec extends WordSpecLike with Matchers with MockitoSugar with 
 
       implicit val request = FakeRequest("GET", "/getform", FakeHeaders(), "", tags = csrfTags("token"))
 
-      when(mockHttpGet.GET[HtmlPartial](MockitoMatchers.eq("foo?csrfToken=token"))(any[HttpReads[HtmlPartial]], any[HeaderCarrier]))
+      when(mockCoreGet.GET[HtmlPartial](MockitoMatchers.eq("foo?csrfToken=token"))(any[HttpReads[HtmlPartial]], any[HeaderCarrier]))
         .thenReturn(Future.successful(HtmlPartial.Failure()))
 
       partialProvider.getPartialContent(url = "foo", errorMessage = Html("something went wrong")).body should be("something went wrong")

@@ -16,15 +16,15 @@
 
 package uk.gov.hmrc.play.partials
 
-import play.api.Logger
 import play.api.mvc.RequestHeader
 import play.twirl.api.{Html, HtmlFormat}
-import uk.gov.hmrc.http.HttpGet
+import uk.gov.hmrc.play.http.ws.WSExtensions.ExtendCoreGet
+
 import scala.concurrent.duration._
 
 trait PartialRetriever extends TemplateProcessor {
 
-  def httpGet: HttpGet
+  def coreGet: ExtendCoreGet
 
   def partialRetrievalTimeout: Duration = 20.seconds
 

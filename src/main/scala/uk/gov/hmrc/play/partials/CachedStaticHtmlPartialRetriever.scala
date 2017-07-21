@@ -21,13 +21,12 @@ import java.util.concurrent.TimeUnit
 import com.google.common.base.Ticker
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import play.api.mvc.RequestHeader
-import play.twirl.api.Html
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent._
 import scala.concurrent.duration._
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
-import uk.gov.hmrc.play.http.ws.WSExtensions._
+import uk.gov.hmrc.play.http.ws.WSExtensions.ExtendCoreGet
 
 
 trait CachedStaticHtmlPartialRetriever extends PartialRetriever {
@@ -62,6 +61,6 @@ trait CachedStaticHtmlPartialRetriever extends PartialRetriever {
 
   private def fetchPartial(url: String): HtmlPartial = {
     implicit val hc = HeaderCarrier()
-    Await.result(httpGet.GET[HtmlPartial](url).recover(HtmlPartial.connectionExceptionsAsHtmlPartialFailure), partialRetrievalTimeout)
+    Await.result(coreGet.GET[HtmlPartial](url).recover(HtmlPartial.connectionExceptionsAsHtmlPartialFailure), partialRetrievalTimeout)
   }
 }

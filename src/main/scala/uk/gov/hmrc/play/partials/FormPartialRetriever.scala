@@ -21,7 +21,6 @@ import play.twirl.api.Html
 
 import scala.concurrent.Await
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
-import uk.gov.hmrc.play.http.ws.WSExtensions._
 
 trait FormPartialRetriever extends PartialRetriever with HeaderCarrierForPartialsConverter {
 
@@ -31,7 +30,7 @@ trait FormPartialRetriever extends PartialRetriever with HeaderCarrierForPartial
   }
 
   override protected def loadPartial(url: String)(implicit request: RequestHeader): HtmlPartial = {
-    Await.result(httpGet.GET[HtmlPartial](urlWithCsrfToken(url)).recover(HtmlPartial.connectionExceptionsAsHtmlPartialFailure), partialRetrievalTimeout)
+    Await.result(coreGet.GET[HtmlPartial](urlWithCsrfToken(url)).recover(HtmlPartial.connectionExceptionsAsHtmlPartialFailure), partialRetrievalTimeout)
   }
 
   protected def getCsrfToken(implicit request: RequestHeader): String = {
